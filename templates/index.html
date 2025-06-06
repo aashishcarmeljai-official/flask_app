@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Machine Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .machine-card {
+            border: 1px solid #ccc;
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .machine-card a {
+            text-decoration: none;
+            color: #007BFF;
+        }
+        .machine-card a:hover {
+            text-decoration: underline;
+        }
+        .main h1 {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <a href="{{ url_for('add_machine') }}">
+                <button class="add-btn">+ Add Machine</button>
+            </a>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main">
+            <h1>Machine Dashboard</h1>
+            {% if machines %}
+                {% for machine_id, machine in machines.items() %}
+                    {% if machine.sop %}
+                    <div class="machine-card">
+                        <h3>{{ machine.name }}</h3>
+                        <p>
+                            📄 <a href="{{ url_for('uploaded_file', filename=machine.pdf) }}" target="_blank">View PDF</a><br>
+                            🎥 <a href="{{ url_for('uploaded_file', filename=machine.video) }}" target="_blank">Watch Video</a><br>
+                            📘 <a href="{{ url_for('machine_detail', machine_id=machine_id) }}">View SOP</a>
+                        </p>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <p>No machines added yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Machines</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background-color: #f7f7f7;
+        }
+
+        form {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 600px;
+            margin: auto;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
+        }
+
+        input[type="text"],
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h2 style="text-align: center;">Add a New Machine</h2>
+
+    <form method="POST" enctype="multipart/form-data">
+        <label for="machine_name">Machine Name:</label>
+        <input type="text" id="machine_name" name="machine_name" required>
+
+        <label for="pdf_file">Upload Datasheet (PDF):</label>
+        <input type="file" id="pdf_file" name="pdf_file" accept="application/pdf" required>
+
+        <label for="video_file">Upload Machine Video:</label>
+        <input type="file" id="video_file" name="video_file" accept="video/*" required>
+
+        <button type="submit">Generate SOP</button>
+    </form>
+</body>
+</html>
