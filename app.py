@@ -21,7 +21,7 @@ model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-capt
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['SOP_FOLDER'] = 'sops'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///machines.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -296,6 +296,12 @@ def delete_machine(machine_id):
         return f"Error deleting files: {str(e)}", 500
 
     return redirect(url_for("home"))
+
+@app.route('/init-db')
+def init_db_route():
+    from models import db  # Replace with your actual import if different
+    db.create_all()
+    return "Database initialized!"
 
 if __name__ == "__main__":
     import webbrowser
