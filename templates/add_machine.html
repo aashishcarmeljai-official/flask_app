@@ -2,76 +2,111 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Add Machines</title>
+    <title>Add Machine</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 30px;
-            background-color: #f7f7f7;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f7f9fc;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #2f3542;
+            font-size: 1.8rem;
+            margin-bottom: 30px;
         }
 
         form {
-            background: #fff;
-            padding: 20px;
-            border-radius: 10px;
+            background-color: #ffffff;
+            padding: 30px;
             max-width: 600px;
             margin: auto;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
         }
 
         label {
-            font-weight: bold;
+            font-weight: 600;
+            margin-top: 20px;
             display: block;
-            margin-top: 15px;
+            color: #2f3542;
         }
 
         input[type="text"],
         input[type="file"] {
             width: 100%;
             padding: 10px;
-            margin-top: 5px;
+            margin-top: 8px;
+            border: 1px solid #dcdde1;
             border-radius: 6px;
-            border: 1px solid #ccc;
-        }
-
-        button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            border: none;
-            background-color: #007BFF;
-            color: white;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #0056b3;
+            font-size: 1rem;
         }
 
         .note {
-            font-size: 0.9em;
-            color: #555;
+            font-size: 0.85rem;
+            color: #6c757d;
             margin-top: 5px;
+        }
+
+        button[type="submit"] {
+            display: block;
+            width: 100%;
+            margin-top: 30px;
+            padding: 12px;
+            background-color: #007BFF;
+            color: white;
+            font-size: 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .back-link a {
+            color: #007BFF;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <h2 style="text-align: center;">Add a New Machine</h2>
+    <h2>Add a New Machine</h2>
 
     <form method="POST" enctype="multipart/form-data">
         <label for="machine_name">Machine Name:</label>
-        <input type="text" id="machine_name" name="machine_name" required>
+        <input type="text" id="machine_name" name="machine_name" required placeholder="e.g. CNC Lathe 4500">
 
         <label for="pdf_file">Upload Datasheet (PDF):</label>
         <input type="file" id="pdf_file" name="pdf_file" accept="application/pdf">
-        <div class="note">Optional: Add a machine datasheet in PDF format.</div>
+        <div class="note">Optional: Upload a machine datasheet in PDF format.</div>
 
         <label for="video_file">Upload Machine Video:</label>
         <input type="file" id="video_file" name="video_file" accept="video/*">
-        <div class="note">Optional: Add a video demonstrating machine operation.</div>
+        <div class="note">Optional: Upload a video demonstrating machine operation.</div>
 
-        <button type="submit">Generate SOP</button>
+        <button type="submit">➕ Generate SOP</button>
     </form>
+
+    <div class="back-link">
+        <a href="{{ url_for('home') }}">← Back to Dashboard</a>
+    </div>
 </body>
 </html>

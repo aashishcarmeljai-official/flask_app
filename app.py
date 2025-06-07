@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory, make_response, jsonify
+from models import db, Machine, Screenshot
 import os
 import fitz  # PyMuPDF
 import cv2
@@ -20,25 +21,27 @@ model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-capt
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['SOP_FOLDER'] = 'sops'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///machines.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+with app.app_context():
+    db.create_all()
+
 openai_api_key = os.environ.get('OPENAI_API_KEY')
 client = OpenAI(api_key=openai_api_key)
 
-# --- PDFKit Config ---
 PDFKIT_CONFIG = pdfkit.configuration(wkhtmltopdf='C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe')
 
-# --- Directory Setup ---
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['SOP_FOLDER'], exist_ok=True)
-
-# --- In-Memory Storage ---
-machines = {}
 
 # --- Utility Functions ---
 def extract_pdf_text(pdf_path):
     doc = fitz.open(pdf_path)
     return "\n".join([page.get_text() for page in doc])
 
-def extract_video_screenshots(video_path, output_dir, num_frames=1):
+def extract_video_screenshots(video_path, output_dir, num_frames=10):
     os.makedirs(output_dir, exist_ok=True)
     cap = cv2.VideoCapture(video_path)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -69,6 +72,7 @@ def generate_clip_captions(screenshot_paths):
 # --- Routes ---
 @app.route('/')
 def home():
+    machines = Machine.query.order_by(Machine.created_at.desc()).all()
     return render_template("index.html", machines=machines)
 
 @app.route('/uploads/<path:filename>')
@@ -78,7 +82,6 @@ def uploaded_file(filename):
 @app.route('/add', methods=["GET", "POST"])
 def add_machine():
     if request.method == "POST":
-        machine_id = str(uuid4())
         name = request.form['machine_name']
         pdf = request.files.get('pdf_file')
         video = request.files.get('video_file')
@@ -86,61 +89,67 @@ def add_machine():
         if not pdf and not video:
             return "At least one of PDF or video is required.", 400
 
-        machine_data = {"name": name}
+        machine = Machine(name=name)
 
         if pdf:
-            pdf_filename = f"{machine_id}_pdf.pdf"
+            pdf_filename = f"{uuid4()}_pdf.pdf"
             pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], pdf_filename)
             pdf.save(pdf_path)
-            machine_data["pdf"] = pdf_filename
+            machine.pdf_filename = pdf_filename
 
         if video:
-            video_filename = f"{machine_id}_video.mp4"
+            video_filename = f"{uuid4()}_video.mp4"
             video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_filename)
             video.save(video_path)
-            machine_data["video"] = video_filename
+            machine.video_filename = video_filename
 
-        machines[machine_id] = machine_data
-        return redirect(url_for('generate_sop', machine_id=machine_id))
+        db.session.add(machine)
+        db.session.commit()
+        return redirect(url_for('generate_sop', machine_id=machine.id))
+
     return render_template("add_machine.html")
 
 @app.route('/generate_sop/<machine_id>', methods=["GET", "POST"])
 def generate_sop(machine_id):
+    machine = Machine.query.get_or_404(machine_id)
+
     if request.method == "POST":
         sop_html = request.form["sop"]
-        filepath = os.path.join(app.config['SOP_FOLDER'], f"{machine_id}.html")
+        filename = f"{machine_id}.html"
+        filepath = os.path.join(app.config['SOP_FOLDER'], filename)
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(sop_html)
-        machines[machine_id]["sop"] = f"{machine_id}.html"
+        machine.sop_filename = filename
+        db.session.commit()
         return redirect(url_for("home"))
 
-    machine = machines[machine_id]
-
-    # --- Extract PDF text ---
     pdf_text = ""
-    if "pdf" in machine:
-        pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], machine["pdf"])
+    if machine.pdf_filename:
+        pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], machine.pdf_filename)
         pdf_text = extract_pdf_text(pdf_path)
 
-    # --- Process video screenshots and captions ---
     captions = []
     screenshot_relpaths = []
-    if "video" in machine:
-        video_path = os.path.join(app.config['UPLOAD_FOLDER'], machine["video"])
+    if machine.video_filename:
+        video_path = os.path.join(app.config['UPLOAD_FOLDER'], machine.video_filename)
         screenshot_dir = os.path.join(app.config['UPLOAD_FOLDER'], f"{machine_id}_screens")
         screenshot_files = extract_video_screenshots(video_path, screenshot_dir)
         screenshot_paths = [os.path.join(screenshot_dir, f) for f in screenshot_files]
         captions = generate_clip_captions(screenshot_paths)
         screenshot_relpaths = [f"{machine_id}_screens/{fname}" for fname, _ in captions]
 
-    captions_text = "\n".join([f"{fname}: {desc}" for fname, desc in captions]) if captions else "No video captions available."
+        for fname, cap in captions:
+            screenshot = Screenshot(machine_id=machine.id, filename=fname, caption=cap)
+            db.session.add(screenshot)
+        db.session.commit()
 
-    prompt = f"""
-You are an expert technical writer. Create a detailed, professional Standard Operating Procedure (SOP)
+    captions_text = "\n".join([f"{fname}: {desc}" for fname, desc in captions]) or "No video captions available."
+
+    prompt = f"""You are an expert technical writer. Create a detailed, professional Standard Operating Procedure (SOP)
 for a machine using the following resources.
 
 Datasheet:
-{pdf_text if pdf_text else "No datasheet provided."}
+{pdf_text or "No datasheet provided."}
 
 Visual Observations from Video Frames:
 {captions_text}
@@ -153,35 +162,33 @@ Visual Observations from Video Frames:
             {"role": "user", "content": prompt}
         ]
     )
+
     sop_text = response.choices[0].message.content
 
     return render_template("generate_sop.html",
-                           machine_id=machine_id,
+                           machine_id=machine.id,
                            sop_text=sop_text,
                            screenshots=screenshot_relpaths)
 
 @app.route('/machine/<machine_id>')
 def machine_detail(machine_id):
-    machine = machines.get(machine_id)
-    if not machine:
-        return "Machine not found", 404
-
-    sop_path = os.path.join(app.config['SOP_FOLDER'], machine.get('sop', ''))
+    machine = Machine.query.get_or_404(machine_id)
     sop_html = ""
-    if os.path.exists(sop_path):
-        with open(sop_path, "r", encoding="utf-8") as f:
-            sop_html = f.read()
-
+    if machine.sop_filename:
+        sop_path = os.path.join(app.config['SOP_FOLDER'], machine.sop_filename)
+        if os.path.exists(sop_path):
+            with open(sop_path, "r", encoding="utf-8") as f:
+                sop_html = f.read()
     return render_template("machine_detail.html", machine=machine, sop_html=sop_html)
 
 @app.route('/export/pdf/<machine_id>')
 def export_pdf(machine_id):
-    sop_path = os.path.join(app.config['SOP_FOLDER'], f"{machine_id}.html")
-    if not os.path.exists(sop_path):
+    machine = Machine.query.get_or_404(machine_id)
+    if not machine.sop_filename:
         return "SOP not found", 404
+    sop_path = os.path.join(app.config['SOP_FOLDER'], machine.sop_filename)
     with open(sop_path, "r", encoding="utf-8") as f:
         sop_html = f.read()
-
     pdf = pdfkit.from_string(sop_html, False, configuration=PDFKIT_CONFIG)
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
@@ -190,46 +197,41 @@ def export_pdf(machine_id):
 
 @app.route('/export/docx/<machine_id>')
 def export_docx(machine_id):
-    sop_path = os.path.join(app.config['SOP_FOLDER'], f"{machine_id}.html")
+    machine = Machine.query.get_or_404(machine_id)
+    sop_path = os.path.join(app.config['SOP_FOLDER'], machine.sop_filename or "")
     if not os.path.exists(sop_path):
         return "SOP not found", 404
     with open(sop_path, "r", encoding="utf-8") as f:
         sop_html = f.read()
-
     soup = BeautifulSoup(sop_html, "html.parser")
     text = soup.get_text()
-
     doc = Document()
     for line in text.splitlines():
         doc.add_paragraph(line)
-    
     output_path = os.path.join(app.config['SOP_FOLDER'], f"{machine_id}.docx")
     doc.save(output_path)
-    
     return send_from_directory(app.config['SOP_FOLDER'], f"{machine_id}.docx", as_attachment=True)
 
 @app.route("/copilot/<machine_id>", methods=["POST"])
 def copilot(machine_id):
     data = request.get_json()
     user_prompt = data.get("prompt", "")
+    machine = Machine.query.get_or_404(machine_id)
 
-    machine = machines.get(machine_id)
-    if not machine:
-        return jsonify({"response": "Machine not found."}), 404
-
-    sop_path = os.path.join(app.config['SOP_FOLDER'], machine.get('sop', ''))
     sop_text = ""
-    if os.path.exists(sop_path):
-        with open(sop_path, "r", encoding="utf-8") as f:
-            sop_text = f.read()
+    if machine.sop_filename:
+        sop_path = os.path.join(app.config['SOP_FOLDER'], machine.sop_filename)
+        if os.path.exists(sop_path):
+            with open(sop_path, "r", encoding="utf-8") as f:
+                sop_text = f.read()
 
     manual_text = ""
-    if "pdf" in machine:
-        pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], machine["pdf"])
+    if machine.pdf_filename:
+        pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], machine.pdf_filename)
         manual_text = extract_pdf_text(pdf_path)
 
     context = f"""
-Machine Name: {machine['name']}
+Machine Name: {machine.name}
 
 Manual:
 {manual_text[:2000] if manual_text else "Not provided"}
@@ -263,29 +265,32 @@ User Question:
 
 @app.route('/delete/<machine_id>', methods=["POST"])
 def delete_machine(machine_id):
-    machine = machines.pop(machine_id, None)
-    if not machine:
-        return "Machine not found", 404
+    machine = Machine.query.get_or_404(machine_id)
 
     try:
-        if "pdf" in machine:
-            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], machine["pdf"]))
-        if "video" in machine:
-            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], machine["video"]))
+        if machine.pdf_filename:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], machine.pdf_filename))
+        if machine.video_filename:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], machine.video_filename))
 
-        screenshot_dir = os.path.join(app.config['UPLOAD_FOLDER'], f"{machine_id}_screens")
-        if os.path.exists(screenshot_dir):
-            for file in os.listdir(screenshot_dir):
-                os.remove(os.path.join(screenshot_dir, file))
-            os.rmdir(screenshot_dir)
+        shot_dir = os.path.join(app.config['UPLOAD_FOLDER'], f"{machine_id}_screens")
+        if os.path.exists(shot_dir):
+            for f in os.listdir(shot_dir):
+                os.remove(os.path.join(shot_dir, f))
+            os.rmdir(shot_dir)
 
-        sop_file = machine.get("sop")
-        if sop_file:
-            os.remove(os.path.join(app.config['SOP_FOLDER'], sop_file))
+        if machine.sop_filename:
+            os.remove(os.path.join(app.config['SOP_FOLDER'], machine.sop_filename))
             for ext in ['.docx', '.pdf']:
                 path = os.path.join(app.config['SOP_FOLDER'], f"{machine_id}{ext}")
                 if os.path.exists(path):
                     os.remove(path)
+
+        for shot in machine.screenshots:
+            db.session.delete(shot)
+
+        db.session.delete(machine)
+        db.session.commit()
 
     except Exception as e:
         return f"Error deleting files: {str(e)}", 500
