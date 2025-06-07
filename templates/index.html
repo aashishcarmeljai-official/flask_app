@@ -11,16 +11,38 @@
             border-radius: 10px;
             margin-bottom: 20px;
             background-color: #f9f9f9;
+            position: relative;
         }
+
         .machine-card a {
             text-decoration: none;
             color: #007BFF;
         }
+
         .machine-card a:hover {
             text-decoration: underline;
         }
+
         .main h1 {
             margin-bottom: 20px;
+        }
+
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .machine-actions {
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -45,6 +67,9 @@
                             📄 <a href="{{ url_for('uploaded_file', filename=machine.pdf) }}" target="_blank">View PDF</a><br>
                             🎥 <a href="{{ url_for('uploaded_file', filename=machine.video) }}" target="_blank">Watch Video</a><br>
                             📘 <a href="{{ url_for('machine_detail', machine_id=machine_id) }}">View SOP</a>
+                            <form method="POST" action="{{ url_for('delete_machine', machine_id=machine_id) }}" onsubmit="return confirm('Are you sure you want to delete this machine?');">
+                                <button type="submit" class="delete-btn">🗑 Remove</button>
+                            </form>
                         </p>
                     </div>
                     {% endif %}

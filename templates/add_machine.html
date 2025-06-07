@@ -48,6 +48,12 @@
         button:hover {
             background-color: #0056b3;
         }
+
+        .note {
+            font-size: 0.9em;
+            color: #555;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -58,10 +64,12 @@
         <input type="text" id="machine_name" name="machine_name" required>
 
         <label for="pdf_file">Upload Datasheet (PDF):</label>
-        <input type="file" id="pdf_file" name="pdf_file" accept="application/pdf" required>
+        <input type="file" id="pdf_file" name="pdf_file" accept="application/pdf">
+        <div class="note">Optional: Add a machine datasheet in PDF format.</div>
 
         <label for="video_file">Upload Machine Video:</label>
-        <input type="file" id="video_file" name="video_file" accept="video/*" required>
+        <input type="file" id="video_file" name="video_file" accept="video/*">
+        <div class="note">Optional: Add a video demonstrating machine operation.</div>
 
         <button type="submit">Generate SOP</button>
     </form>
