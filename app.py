@@ -13,9 +13,9 @@ from docx import Document
 from bs4 import BeautifulSoup
 
 # --- BLIP Model Init ---
-device = "cuda" if torch.cuda.is_available() else "cpu"
+"""device = "cuda" if torch.cuda.is_available() else "cpu"
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to(device)
+model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to(device)"""
 
 # --- Flask Setup ---
 app = Flask(__name__)
