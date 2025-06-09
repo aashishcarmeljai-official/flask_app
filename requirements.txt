@@ -33,7 +33,6 @@ hpack==4.1.0
 httpcore==1.0.9
 httplib2==0.22.0
 httpx==0.28.1
-huggingface-hub==0.32.4
 hyperframe==6.1.0
 idna==3.10
 importlib_resources==6.5.2
@@ -52,12 +51,11 @@ nibabel==5.3.2
 nipype==1.10.0
 numpy==2.2.6
 openai==1.84.0
-opencv-python==4.11.0.86
 packaging==25.0
 pandas==2.3.0
 pathlib==1.0.1
 pdfkit==1.0.0
-pillow==11.2.1
+# Removed: Pillow==11.2.1 (image processing)
 pluggy==1.6.0
 postgrest==1.0.2
 propcache==0.3.1
@@ -82,7 +80,7 @@ rdflib==6.3.2
 realtime==2.4.3
 regex==2024.11.6
 requests==2.32.3
-safetensors==0.5.3
+# Removed: safetensors==0.5.3
 scipy==1.15.3
 simplejson==3.20.1
 six==1.17.0
@@ -93,13 +91,13 @@ storage3==0.11.3
 StrEnum==0.4.15
 supafunc==0.9.4
 sympy==1.14.0
-tokenizers==0.21.1
+# Removed: tokenizers==0.21.1
 tomli==2.2.1
-torch==2.7.1
-torchvision==0.22.1
+# Removed: torch==2.7.1
+# Removed: torchvision==0.22.1
 tqdm==4.67.1
 traits==7.0.2
-transformers==4.52.4
+# Removed: transformers==4.52.4
 typing-inspection==0.4.1
 typing_extensions==4.14.0
 tzdata==2025.2
