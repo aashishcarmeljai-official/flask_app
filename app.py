@@ -2,12 +2,12 @@ from flask import Flask, render_template, request, redirect, url_for, send_from_
 from models import db, Machine, Screenshot
 import os
 import fitz  # PyMuPDF
-import cv2
+# import cv2
 from uuid import uuid4
 from openai import OpenAI
-from PIL import Image
-import torch
-from transformers import BlipProcessor, BlipForConditionalGeneration
+# from PIL import Image
+# import torch
+# from transformers import BlipProcessor, BlipForConditionalGeneration
 import pdfkit
 from docx import Document
 from bs4 import BeautifulSoup
