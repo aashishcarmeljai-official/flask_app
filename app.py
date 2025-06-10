@@ -2,12 +2,12 @@ from flask import Flask, render_template, request, redirect, url_for, send_from_
 from models import db, Machine, Screenshot
 import os
 import fitz  # PyMuPDF
-import cv2
+# import cv2
 from uuid import uuid4
 from openai import OpenAI
-from PIL import Image
-import torch
-from transformers import BlipProcessor, BlipForConditionalGeneration
+# from PIL import Image
+# import torch
+# from transformers import BlipProcessor, BlipForConditionalGeneration
 import pdfkit
 from docx import Document
 from bs4 import BeautifulSoup
@@ -114,11 +114,11 @@ def generate_sop(machine_id):
     machine = Machine.query.get_or_404(machine_id)
 
     if request.method == "POST":
-        sop_json = request.form["sop"]
-        filename = f"{machine_id}.json"
+        sop_html = request.form["sop"]
+        filename = f"{machine_id}.html"
         filepath = os.path.join(app.config['SOP_FOLDER'], filename)
         with open(filepath, "w", encoding="utf-8") as f:
-            f.write(sop_json)
+            f.write(sop_html)
         machine.sop_filename = filename
         db.session.commit()
         return redirect(url_for("home"))
@@ -148,8 +148,6 @@ def generate_sop(machine_id):
     prompt = f"""You are an expert technical writer. Create a detailed, professional Standard Operating Procedure (SOP)
 for a machine using the following resources.
 
-Please format your response in clearly defined HTML blocks suitable for structured editing.
-
 Datasheet:
 {pdf_text or "No datasheet provided."}
 
@@ -158,46 +156,30 @@ Visual Observations from Video Frames:
 """
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-3.5-turbo",
         messages=[
-            {"role": "system", "content": "You generate structured SOPs in HTML."},
+            {"role": "system", "content": "You generate detailed machine SOPs."},
             {"role": "user", "content": prompt}
         ]
     )
 
-    sop_html = response.choices[0].message.content.strip()
-    soup = BeautifulSoup(sop_html, "html.parser")
-    sop_text_only = soup.get_text()
-
-    # Return JSON-wrapped placeholder for Editor.js (you may replace this with GPT that emits JSON)
-    default_editor_data = {
-        "time": 0,
-        "blocks": [
-            {
-                "type": "paragraph",
-                "data": {
-                    "text": sop_text_only
-                }
-            }
-        ],
-        "version": "2.27.0"
-    }
+    sop_text = response.choices[0].message.content
 
     return render_template("generate_sop.html",
                            machine_id=machine.id,
-                           sop_text=default_editor_data,
+                           sop_text=sop_text,
                            screenshots=screenshot_relpaths)
 
 @app.route('/machine/<machine_id>')
 def machine_detail(machine_id):
     machine = Machine.query.get_or_404(machine_id)
-    sop_json = ""
+    sop_html = ""
     if machine.sop_filename:
         sop_path = os.path.join(app.config['SOP_FOLDER'], machine.sop_filename)
         if os.path.exists(sop_path):
             with open(sop_path, "r", encoding="utf-8") as f:
-                sop_json = f.read()
-    return render_template("machine_detail.html", machine=machine, sop_json=sop_json)
+                sop_html = f.read()
+    return render_template("machine_detail.html", machine=machine, sop_html=sop_html)
 
 @app.route('/export/pdf/<machine_id>')
 def export_pdf(machine_id):
@@ -269,7 +251,7 @@ User Question:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You assist users by analyzing SOPs and manuals."},
                 {"role": "user", "content": full_prompt}
@@ -315,11 +297,11 @@ def delete_machine(machine_id):
 
     return redirect(url_for("home"))
 
-@app.route('/init-db')
+"""@app.route('/init-db')
 def init_db_route():
     from models import db  # Replace with your actual import if different
     db.create_all()
-    return "Database initialized!"
+    return "Database initialized!"""
 
 if __name__ == "__main__":
     import webbrowser
