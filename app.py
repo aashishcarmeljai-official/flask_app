@@ -114,11 +114,11 @@ def generate_sop(machine_id):
     machine = Machine.query.get_or_404(machine_id)
 
     if request.method == "POST":
-        sop_html = request.form["sop"]
-        filename = f"{machine_id}.html"
+        sop_json = request.form["sop"]
+        filename = f"{machine_id}.json"
         filepath = os.path.join(app.config['SOP_FOLDER'], filename)
         with open(filepath, "w", encoding="utf-8") as f:
-            f.write(sop_html)
+            f.write(sop_json)
         machine.sop_filename = filename
         db.session.commit()
         return redirect(url_for("home"))
@@ -148,6 +148,8 @@ def generate_sop(machine_id):
     prompt = f"""You are an expert technical writer. Create a detailed, professional Standard Operating Procedure (SOP)
 for a machine using the following resources.
 
+Please format your response in clearly defined HTML blocks suitable for structured editing.
+
 Datasheet:
 {pdf_text or "No datasheet provided."}
 
@@ -158,28 +160,42 @@ Visual Observations from Video Frames:
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[
-            {"role": "system", "content": "You generate detailed machine SOPs."},
+            {"role": "system", "content": "You generate structured SOPs in HTML."},
             {"role": "user", "content": prompt}
         ]
     )
 
-    sop_text = response.choices[0].message.content
+    sop_html = response.choices[0].message.content.strip()
+
+    # Return JSON-wrapped placeholder for Editor.js (you may replace this with GPT that emits JSON)
+    default_editor_data = {
+        "time": 0,
+        "blocks": [
+            {
+                "type": "paragraph",
+                "data": {
+                    "text": sop_html
+                }
+            }
+        ],
+        "version": "2.27.0"
+    }
 
     return render_template("generate_sop.html",
                            machine_id=machine.id,
-                           sop_text=sop_text,
+                           sop_text=default_editor_data,
                            screenshots=screenshot_relpaths)
 
 @app.route('/machine/<machine_id>')
 def machine_detail(machine_id):
     machine = Machine.query.get_or_404(machine_id)
-    sop_html = ""
+    sop_json = ""
     if machine.sop_filename:
         sop_path = os.path.join(app.config['SOP_FOLDER'], machine.sop_filename)
         if os.path.exists(sop_path):
             with open(sop_path, "r", encoding="utf-8") as f:
-                sop_html = f.read()
-    return render_template("machine_detail.html", machine=machine, sop_html=sop_html)
+                sop_json = f.read()
+    return render_template("machine_detail.html", machine=machine, sop_json=sop_json)
 
 @app.route('/export/pdf/<machine_id>')
 def export_pdf(machine_id):
