@@ -2,12 +2,12 @@ from flask import Flask, render_template, request, redirect, url_for, send_from_
 from models import db, Machine, Screenshot
 import os
 import fitz  # PyMuPDF
-# import cv2
+import cv2
 from uuid import uuid4
 from openai import OpenAI
-# from PIL import Image
-# import torch
-# from transformers import BlipProcessor, BlipForConditionalGeneration
+from PIL import Image
+import torch
+from transformers import BlipProcessor, BlipForConditionalGeneration
 import pdfkit
 from docx import Document
 from bs4 import BeautifulSoup
@@ -166,6 +166,8 @@ Visual Observations from Video Frames:
     )
 
     sop_html = response.choices[0].message.content.strip()
+    soup = BeautifulSoup(sop_html, "html.parser")
+    sop_text_only = soup.get_text()
 
     # Return JSON-wrapped placeholder for Editor.js (you may replace this with GPT that emits JSON)
     default_editor_data = {
@@ -174,7 +176,7 @@ Visual Observations from Video Frames:
             {
                 "type": "paragraph",
                 "data": {
-                    "text": sop_html
+                    "text": sop_text_only
                 }
             }
         ],
@@ -313,11 +315,11 @@ def delete_machine(machine_id):
 
     return redirect(url_for("home"))
 
-"""@app.route('/init-db')
+@app.route('/init-db')
 def init_db_route():
     from models import db  # Replace with your actual import if different
     db.create_all()
-    return "Database initialized!"""
+    return "Database initialized!"
 
 if __name__ == "__main__":
     import webbrowser
