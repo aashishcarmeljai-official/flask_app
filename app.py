@@ -158,7 +158,7 @@ Visual Observations from Video Frames:
 """
 
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo", #gpt-3.5-turbo gpt-4o
+        model="gpt-4o", #gpt-3.5-turbo gpt-4o
         messages=[
             {"role": "system", "content": "You generate detailed machine SOPs."},
             {"role": "user", "content": prompt}
@@ -253,7 +253,7 @@ User Question:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo", #gpt-3.5-turbo gpt-4
+            model="gpt-4", #gpt-3.5-turbo gpt-4
             messages=[
                 {"role": "system", "content": "You assist users by analyzing SOPs and manuals."},
                 {"role": "user", "content": full_prompt}
