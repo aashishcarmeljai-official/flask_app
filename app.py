@@ -145,8 +145,10 @@ def generate_sop(machine_id):
 
     captions_text = "\n".join([f"{fname}: {desc}" for fname, desc in captions]) or "No video captions available."
 
-    prompt = f"""You are an expert technical writer. Create a detailed, professional Standard Operating Procedure (SOP)
-for a machine using the following resources.
+    prompt = f"""You are an expert at writing clear and concise Standard Operating Procedures (SOPs).
+Given the following datasheet or machine manual and if applicable video captions, generate an SOP in a structured format using numbered steps, clear headings, and bullet points where needed.
+Make the SOP easy to read and follow. Include sections like 'Preparation', 'Operation Steps', 'Safety Precautions', and 'Shutdown Procedure' if applicable.
+Create a Standard Operating Procedure in HTML format, using <h2>, <h3>, <ul>, <ol>, and <li> as appropriate.
 
 Datasheet:
 {pdf_text or "No datasheet provided."}
@@ -156,7 +158,7 @@ Visual Observations from Video Frames:
 """
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-3.5-turbo", #gpt-3.5-turbo gpt-4o
         messages=[
             {"role": "system", "content": "You generate detailed machine SOPs."},
             {"role": "user", "content": prompt}
@@ -251,7 +253,7 @@ User Question:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo", #gpt-3.5-turbo gpt-4
             messages=[
                 {"role": "system", "content": "You assist users by analyzing SOPs and manuals."},
                 {"role": "user", "content": full_prompt}

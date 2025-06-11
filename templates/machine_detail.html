@@ -178,13 +178,26 @@
         <!-- Saved SOP -->
         <div class="section">
             <h3>📘 Saved SOP</h3>
-            {% if sop_html %}
-                <div class="sop-container">
-                    {{ sop_html | safe }}
-                </div>
-            {% else %}
-                <p>No SOP generated yet.</p>
-            {% endif %}
+                {% if sop_html %}
+        <div class="sop-container">
+                {{ sop_html | safe }}
+        </div>
+
+        <div style="margin-top: 20px; display: flex; gap: 15px;">
+            <a href="{{ url_for('export_pdf', machine_id=machine.id) }}">
+                <button style="padding: 10px 15px; background-color: #1e90ff; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    ⬇ Export as PDF
+                </button>
+            </a>
+            <a href="{{ url_for('export_docx', machine_id=machine.id) }}">
+                <button style="padding: 10px 15px; background-color: #1e90ff; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    ⬇ Export as DOCX
+                </button>
+            </a>
+        </div>
+        {% else %}
+            <p>No SOP generated yet.</p>
+        {% endif %}
         </div>
 
         <!-- Co-Pilot Output -->

@@ -63,33 +63,20 @@
             margin-top: 10px;
         }
 
-        .save-btn,
-        .export-btn {
+        .save-btn {
             padding: 10px 18px;
             font-size: 15px;
             font-weight: 600;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-
-        .save-btn {
             background-color: #2ed573;
             color: white;
+            transition: background-color 0.2s ease;
         }
 
         .save-btn:hover {
             background-color: #28a745;
-        }
-
-        .export-btn {
-            background-color: #1e90ff;
-            color: white;
-        }
-
-        .export-btn:hover {
-            background-color: #007bff;
         }
 
         .back-link {
@@ -131,12 +118,6 @@
 
         <div class="button-row">
             <button class="save-btn" type="submit">💾 Save SOP</button>
-            <button class="export-btn" type="button" onclick="location.href='{{ url_for('export_pdf', machine_id=machine_id) }}'">
-                ⬇ Export as PDF
-            </button>
-            <button class="export-btn" type="button" onclick="location.href='{{ url_for('export_docx', machine_id=machine_id) }}'">
-                ⬇ Export as DOCX
-            </button>
         </div>
     </form>
 
