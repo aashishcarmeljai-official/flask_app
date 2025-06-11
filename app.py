@@ -299,11 +299,11 @@ def delete_machine(machine_id):
 
     return redirect(url_for("home"))
 
-@app.route('/init-db')
+"""@app.route('/init-db')
 def init_db_route():
     from models import db  # Replace with your actual import if different
     db.create_all()
-    return "Database initialized!"
+    return "Database initialized!"""
 
 if __name__ == "__main__":
     import webbrowser
